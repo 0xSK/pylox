@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pylox"
+version = "0.1.0"
+description = "An interpreter for the Lox programming language, written in Python."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+pylox = "pylox.__main__:main"
+
+[dependency-groups]
+dev = [
+  "pre-commit>=4.2.0,<5",
+  "ruff>=0.11.0,<0.12",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pylox"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.uv]
+default-groups = ["dev"]

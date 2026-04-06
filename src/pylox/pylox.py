@@ -51,11 +51,11 @@ class PyLox:
         return 0
 
     def run(self, source: str) -> None:
-        scanner = Scanner(source)
+        scanner = Scanner(source, self.error)
         tokens: list[Token] = scanner.scan_tokens()
 
         for token in tokens:
-            print(token)
+            print(f"{token.line:>6d} {token.type.name:<20} : {token.lexeme}")
 
     def error(self, line: int, message: str) -> None:
         self.report(line, "", message)

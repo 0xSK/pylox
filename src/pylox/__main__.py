@@ -1,6 +1,9 @@
+from pylox.pylox import PyLox
+
+
 def main() -> int:
     """Run the Pylox CLI."""
-    print("hello, world")
+    PyLox().main()
     return 0
 
 

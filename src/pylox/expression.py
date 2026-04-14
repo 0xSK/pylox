@@ -120,7 +120,7 @@ class RpnPrinter(Visitor[str]):
 
     @visit.register
     def _(self, expr: UnaryExpr) -> str:
-        return self.merge(str(expr.operator.lexeme), expr.right)
+        return self.merge(expr.right, str(expr.operator.lexeme))
 
     @visit.register
     def _(self, expr: BinaryExpr) -> str:

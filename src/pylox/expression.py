@@ -76,13 +76,13 @@ class AstPrinter(Visitor[str]):
     def _(self, expr: LiteralExpr) -> str:
         if expr.value is None:
             return "nil"
-        elif expr is True:
+        if expr.value is True:
             return "true"
-        elif expr is False:
+        if expr.value is False:
             return "false"
-        elif isinstance(expr.value, str):
+        if isinstance(expr.value, str):
             return f'"{expr.value}"'
-        elif isinstance(expr.value, float):
+        if isinstance(expr.value, float):
             return format_float_positional(
                 expr.value,
                 precision=17,  # up to 17 significant digits
@@ -90,8 +90,8 @@ class AstPrinter(Visitor[str]):
                 fractional=True,  # always keep a decimal point with at least one digit
                 trim="0",  # trim trailing zeros, but keep at least one fractional digit
             )
-        else:
-            raise TypeError(f"Unexpected Literal {LiteralExpr}")
+        
+        raise TypeError(f"Unexpected Literal {expr}")
 
     @visit.register
     def _(self, expr: UnaryExpr) -> str:

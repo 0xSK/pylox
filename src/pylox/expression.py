@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from functools import singledispatchmethod
 from typing import Any, Protocol, runtime_checkable
 
+from numpy import format_float_positional
+
 from pylox.token import Token
 
 
@@ -74,7 +76,22 @@ class AstPrinter(Visitor[str]):
     def _(self, expr: LiteralExpr) -> str:
         if expr.value is None:
             return "nil"
-        return str(expr.value)
+        elif expr is True:
+            return "true"
+        elif expr is False:
+            return "false"
+        elif isinstance(expr.value, str):
+            return f'"{expr.value}"'
+        elif isinstance(expr.value, float):
+            return format_float_positional(
+                expr.value,
+                precision=17,  # up to 17 significant digits
+                unique=True,  # shortest string that round-trips to the same float
+                fractional=True,  # always keep a decimal point with at least one digit
+                trim="0",  # trim trailing zeros, but keep at least one fractional digit
+            )
+        else:
+            raise TypeError(f"Unexpected Literal {LiteralExpr}")
 
     @visit.register
     def _(self, expr: UnaryExpr) -> str:

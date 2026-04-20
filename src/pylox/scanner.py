@@ -120,7 +120,7 @@ class Scanner:
         # consume the closing "
         self.advance()
 
-        literal_value = self.source[self.start + 1 : self.current]
+        literal_value = self.source[self.start + 1 : self.current - 1]
         self.add_token(TokenType.STRING, literal_value)
 
     def character_is_digit(self, character: str) -> bool:

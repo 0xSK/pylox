@@ -1,12 +1,19 @@
-from pylox.errors import ParserError
+from pylox.errors import ParserError, TokenErrorCallback
 from pylox.expression import BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr
 from pylox.token import Token, TokenType
 
 
 class Parser:
-    def __init__(self, tokens: list[Token]) -> None:
+    def __init__(self, tokens: list[Token], error_callback: TokenErrorCallback) -> None:
         self.tokens: list[Token] = tokens
         self.current: int = 0
+        self.error_callback = error_callback
+
+    def parse(self) -> Expr | None:
+        try:
+            return self.parse_expression()
+        except ParserError as _:
+            return None
 
     def parse_expression(self) -> Expr:
         expr: Expr = self.parse_equality()
@@ -78,16 +85,39 @@ class Parser:
             self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             expr = GroupingExpr(innerExpr)
         else:
-            raise ParserError()
-            # TODO
+            raise self.error(self.peek(), "Expect expression.")
 
         return expr
-        # TODO
 
     def consume(self, tokenType: TokenType, message: str) -> Token:
         if self.check(tokenType):
             return self.advance()
-        # TODO
+
+        raise self.error(self.peek(), message)
+
+    def error(self, token: Token, message: str) -> ParserError:
+        self.error_callback(token, message)
+        return ParserError()
+
+    def synchronize(self) -> None:
+        self.advance()
+
+        while not self.is_at_end():
+            if self.previous().type == TokenType.SEMICOLON:
+                return
+            elif self.peek().type in {
+                TokenType.CLASS,
+                TokenType.FUN,
+                TokenType.VAR,
+                TokenType.FOR,
+                TokenType.IF,
+                TokenType.WHILE,
+                TokenType.PRINT,
+                TokenType.RETURN,
+            }:
+                return
+
+            self.advance()
 
     def match(self, *tokenTypes: TokenType) -> bool:
         for tokenType in tokenTypes:

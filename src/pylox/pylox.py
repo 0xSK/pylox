@@ -1,7 +1,9 @@
 import argparse
 
+from pylox.expression import AstPrinter
+from pylox.parser import Parser
 from pylox.scanner import Scanner
-from pylox.token import Token
+from pylox.token import Token, TokenType
 
 
 class PyLox:
@@ -51,14 +53,24 @@ class PyLox:
         return 0
 
     def run(self, source: str) -> None:
-        scanner = Scanner(source, self.error)
+        scanner = Scanner(source, self.lineError)
         tokens: list[Token] = scanner.scan_tokens()
 
-        for token in tokens:
-            print(f"{token.line:>6d} {token.type.name:<20} : {token.lexeme}")
+        parser = Parser(tokens, self.tokenError)
+        expr = parser.parse()
+        if expr is None or self.hadError:
+            return
 
-    def error(self, line: int, message: str) -> None:
+        print(AstPrinter().pformat(expr))
+
+    def lineError(self, line: int, message: str) -> None:
         self.report(line, "", message)
+
+    def tokenError(self, token: Token, message: str) -> None:
+        if token.type == TokenType.EOF:
+            self.report(token.line, "at end", message)
+        else:
+            self.report(token.line, f"at `{token.lexeme}`", message)
 
     def report(self, line: int, where: str, message: str) -> None:
         print(f"[line {line}] Error {where}: {message}")

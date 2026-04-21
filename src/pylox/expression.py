@@ -90,7 +90,7 @@ class AstPrinter(Visitor[str]):
                 fractional=True,  # always keep a decimal point with at least one digit
                 trim="0",  # trim trailing zeros, but keep at least one fractional digit
             )
-        
+
         raise TypeError(f"Unexpected Literal {expr}")
 
     @visit.register

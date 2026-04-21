@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from pylox.errors import ParserError, TokenErrorCallback
 from pylox.expression import BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr
 from pylox.token import Token, TokenType
@@ -16,56 +18,39 @@ class Parser:
             return None
 
     def parse_expression(self) -> Expr:
-        expr: Expr = self.parse_equality()
-        return expr
+        return self.parse_equality()
 
     def parse_equality(self) -> Expr:
-        expr: Expr = self.parse_comparison()
-
-        while self.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL):
-            operator: Token = self.previous()
-            rightExpr: Expr = self.parse_comparison()
-            expr: Expr = BinaryExpr(expr, operator, rightExpr)
-
-        return expr
+        return self.parse_binary(self.parse_comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)
 
     def parse_comparison(self) -> Expr:
-        expr: Expr = self.parse_term()
-
-        while self.match(
-            TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL
-        ):
-            operator: Token = self.previous()
-            rightExpr: Expr = self.parse_term()
-            expr: Expr = BinaryExpr(expr, operator, rightExpr)
-
-        return expr
+        return self.parse_binary(
+            self.parse_term,
+            TokenType.GREATER,
+            TokenType.GREATER_EQUAL,
+            TokenType.LESS,
+            TokenType.LESS_EQUAL,
+        )
 
     def parse_term(self) -> Expr:
-        expr: Expr = self.parse_factor()
-
-        while self.match(TokenType.PLUS, TokenType.MINUS):
-            operator: Token = self.previous()
-            rightExpr: Expr = self.parse_factor()
-            expr: Expr = BinaryExpr(expr, operator, rightExpr)
-
-        return expr
+        return self.parse_binary(self.parse_factor, TokenType.PLUS, TokenType.MINUS)
 
     def parse_factor(self) -> Expr:
-        expr: Expr = self.parse_unary()
+        return self.parse_binary(self.parse_unary, TokenType.SLASH, TokenType.STAR)
 
-        while self.match(TokenType.SLASH, TokenType.STAR):
+    def parse_binary(self, next_rule: Callable[[], Expr], *operators: TokenType) -> Expr:
+        expr: Expr = next_rule()
+        while self.match(*operators):
             operator: Token = self.previous()
-            rightExpr: Expr = self.parse_unary()
-            expr: Expr = BinaryExpr(expr, operator, rightExpr)
-
+            right_expr: Expr = next_rule()
+            expr = BinaryExpr(expr, operator, right_expr)
         return expr
 
     def parse_unary(self) -> Expr:
         if self.match(TokenType.BANG, TokenType.MINUS):
             operator: Token = self.previous()
-            rightExpr: Expr = self.parse_unary()
-            expr = UnaryExpr(operator, rightExpr)
+            right_expr: Expr = self.parse_unary()
+            expr = UnaryExpr(operator, right_expr)
         else:
             expr = self.parse_primary()
 

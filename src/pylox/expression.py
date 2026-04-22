@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from functools import singledispatchmethod
 from typing import Any, Protocol, runtime_checkable
 
-from numpy import format_float_positional
-
 from pylox.token import Token
 
 
@@ -83,6 +81,8 @@ class AstPrinter(Visitor[str]):
         if isinstance(expr.value, str):
             return f'"{expr.value}"'
         if isinstance(expr.value, float):
+            from numpy import format_float_positional
+
             return format_float_positional(
                 expr.value,
                 precision=17,  # up to 17 significant digits

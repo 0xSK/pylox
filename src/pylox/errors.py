@@ -18,5 +18,5 @@ class LoxErrorBase(Exception, ABC):
     pass
 
 
-class ParserError(LoxErrorBase):
+class LoxParserError(LoxErrorBase):
     pass

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from pylox.errors import ParserError, TokenErrorCallback
+from pylox.errors import LoxParserError, TokenErrorCallback
 from pylox.expression import BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr
 from pylox.token import Token, TokenType
 
@@ -14,7 +14,7 @@ class Parser:
     def parse(self) -> Expr | None:
         try:
             return self.parse_expression()
-        except ParserError as _:
+        except LoxParserError as _:
             return None
 
     def parse_expression(self) -> Expr:
@@ -80,9 +80,9 @@ class Parser:
 
         raise self.error(self.peek(), message)
 
-    def error(self, token: Token, message: str) -> ParserError:
+    def error(self, token: Token, message: str) -> LoxParserError:
         self.error_callback(token, message)
-        return ParserError()
+        return LoxParserError()
 
     def synchronize(self) -> None:
         self.advance()

@@ -1,6 +1,6 @@
 import argparse
 
-from pylox.expression import AstPrinter
+from pylox.interpreter import Interpreter
 from pylox.parser import Parser
 from pylox.scanner import Scanner
 from pylox.token import Token, TokenType
@@ -61,7 +61,7 @@ class PyLox:
         if expr is None or self.hadError:
             return
 
-        print(AstPrinter().pformat(expr))
+        _interpreter = Interpreter().interpret(expr)
 
     def lineError(self, line: int, message: str) -> None:
         self.report(line, "", message)

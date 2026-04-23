@@ -20,3 +20,15 @@ class LoxErrorBase(Exception, ABC):
 
 class LoxParserError(LoxErrorBase):
     pass
+
+
+class LoxRuntimeError(LoxErrorBase):
+    def __init__(self, message: str, token: Token):
+        super().__init__(message)
+        self.token = token
+
+
+class PyloxImpossibleCaseError(Exception):
+    "Exception for all Pylox coding errors. This should be used for impossible cases."
+
+    pass

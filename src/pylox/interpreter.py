@@ -2,7 +2,7 @@ import math
 from functools import singledispatchmethod
 from typing import TypeGuard
 
-from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError
+from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeErrorCallback
 from pylox.expression import (
     BinaryExpr,
     Expr,
@@ -15,12 +15,15 @@ from pylox.token import Token, TokenType
 
 
 class Interpreter(Visitor[object]):
-    def interpret(self, expr: Expr) -> None:
+    def __init__(self, error_callback: RuntimeErrorCallback) -> None:
+        self.error_callback = error_callback
+
+    def interpret(self, expr: Expr) -> object:
         try:
             value = self.evaluate(expr)
-            print(value)
-        except LoxRuntimeError:
-            pass
+            return value
+        except LoxRuntimeError as e:
+            self.error_callback(e)
         except Exception as e:
             raise PyloxImpossibleCaseError() from e
 

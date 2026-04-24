@@ -13,6 +13,8 @@ class LineErrorCallback(Protocol):
 class TokenErrorCallback(Protocol):
     def __call__(self, token: Token, message: str) -> None: ...
 
+class RuntimeErrorCallback(Protocol):
+    def __call__(self, error: LoxRuntimeError) -> None: ...
 
 class LoxErrorBase(Exception, ABC):
     pass

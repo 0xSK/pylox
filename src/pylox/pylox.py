@@ -4,11 +4,12 @@ from pylox.interpreter import Interpreter
 from pylox.parser import Parser
 from pylox.scanner import Scanner
 from pylox.token import Token, TokenType
-
+from pylox.errors import LoxRuntimeError
 
 class PyLox:
     def __init__(self):
         self.hadError: bool = False
+        self.hadRuntimeError: bool = False
 
     def main(self) -> int:
         args = self.parse_args()
@@ -31,6 +32,8 @@ class PyLox:
         self.run(source)
         if self.hadError:
             return 65
+        if self.hadRuntimeError:
+            return 70
         return 0
 
     def run_prompt(self) -> int:
@@ -47,6 +50,7 @@ class PyLox:
                 # TODO: Implement interpreter
                 self.run(line)
                 self.hadError = False
+                self.hadRuntimeError = False
             except (KeyboardInterrupt, EOFError):
                 print("\nGoodbye!")
                 break
@@ -61,7 +65,11 @@ class PyLox:
         if expr is None or self.hadError:
             return
 
-        _interpreter = Interpreter().interpret(expr)
+        interpreter = Interpreter(self.runtimeError)
+        value = interpreter.interpret(expr)
+        if self.hadRuntimeError:
+            return
+        print(interpreter.stringify(value))
 
     def lineError(self, line: int, message: str) -> None:
         self.report(line, "", message)
@@ -71,6 +79,10 @@ class PyLox:
             self.report(token.line, "at end", message)
         else:
             self.report(token.line, f"at `{token.lexeme}`", message)
+    
+    def runtimeError(self, error: LoxRuntimeError):
+        print(f"{error}\n[line {error.token.line} at '{error.token.lexeme}']")
+        self.hadRuntimeError = True
 
     def report(self, line: int, where: str, message: str) -> None:
         print(f"[line {line}] Error {where}: {message}")

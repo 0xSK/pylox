@@ -1,0 +1,18 @@
+# knobs for challenges at the end of each chapter
+# these challenges usually diverge from the base Lox defintion
+# which is why they are usually turned off
+
+
+# §7 Challenge #2
+#    > Many languages define + such that if either operand is a string, 
+#    > the other is converted to a string and the results are then concatenated. 
+#    > For example, `"scone" + 4` would yield `scone4`. 
+#    > Extend the code in `visitBinaryExpr()` to support that.
+plus_allow_string_mixed_types = false 
+
+# §7 Challenge #3
+#    > What happens right now if you divide a number by zero?
+#    > What do you think should happen? Justify your choice. 
+#    > How do other languages you know handle division by zero, and why do they make the choices they do?
+#    > Change the implementation in `visitBinaryExpr()` to detect and report a runtime error for this case.
+divide_by_zero_error = false

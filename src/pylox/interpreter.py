@@ -12,7 +12,7 @@ from pylox.expression import (
     Visitor,
 )
 from pylox.token import Token, TokenType
-
+from pylox.knobs import get_knob
 
 class Interpreter(Visitor[object]):
     def __init__(self, error_callback: RuntimeErrorCallback) -> None:
@@ -98,6 +98,8 @@ class Interpreter(Visitor[object]):
                         try:
                             return left_value / right_value
                         except ZeroDivisionError as e:
+                            if get_knob('divide_by_zero_error'):
+                                raise LoxRuntimeError(f"Division by zero is not allowed", expr.operator)
                             if left_value == 0.0:
                                 return math.nan
                             elif left_value > 0.0:

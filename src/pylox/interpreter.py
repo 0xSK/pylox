@@ -113,7 +113,17 @@ class Interpreter(Visitor[object]):
                     return left_value + right_value
                 elif isinstance(left_value, str) and isinstance(right_value, str):
                     return f"{left_value}{right_value}"
-                raise LoxRuntimeError("Operands must be two numbers or two strings", expr.operator)
+                elif get_knob('plus_allow_string_mixed_types') and isinstance(left_value, str):
+                    right_value = self.stringify(right_value)
+                    return f"{left_value}{right_value}"
+                elif get_knob('plus_allow_string_mixed_types') and isinstance(right_value, str):
+                    left_value = self.stringify(left_value)
+                    return f"{left_value}{right_value}"
+                
+                if get_knob('plus_allow_string_mixed_types'):
+                    raise LoxRuntimeError("Operands must be two numbers, or at least one string", expr.operator)
+                else:
+                    raise LoxRuntimeError("Operands must be two numbers or two strings", expr.operator)
 
             case TokenType.GREATER:
                 if self.check_number_operand(left_value, expr.operator):

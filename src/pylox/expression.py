@@ -9,7 +9,7 @@ from pylox.token import Token
 
 
 class Expr(ABC):  # noqa: B024
-    def accept[T](self, visitor: Visitor[T]) -> T:
+    def accept[T](self, visitor: ExprVisitor[T]) -> T:
         return visitor.visit(self)
 
 
@@ -43,11 +43,11 @@ class BinaryExpr(Expr):
 
 
 @runtime_checkable
-class Visitor[R](Protocol):
+class ExprVisitor[R](Protocol):
     def visit(self, expr: Expr) -> R: ...
 
 
-class AstPrinter(Visitor[str]):
+class AstPrinter(ExprVisitor[str]):
     def pformat(self, expr: Expr) -> str:
         return expr.accept(self)
 
@@ -102,7 +102,7 @@ class AstPrinter(Visitor[str]):
         return self.parenthesize(str(expr.operator.lexeme), expr.left, expr.right)
 
 
-class RpnPrinter(Visitor[str]):
+class RpnPrinter(ExprVisitor[str]):
     def pformat(self, expr: Expr) -> str:
         return expr.accept(self)
 

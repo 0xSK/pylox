@@ -6,15 +6,17 @@ from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeError
 from pylox.expression import (
     BinaryExpr,
     Expr,
+    ExprVisitor,
     GroupingExpr,
     LiteralExpr,
     UnaryExpr,
-    Visitor,
 )
-from pylox.token import Token, TokenType
 from pylox.knobs import get_knob
+from pylox.statement import StmtVisitor
+from pylox.token import Token, TokenType
 
-class Interpreter(Visitor[object]):
+
+class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     def __init__(self, error_callback: RuntimeErrorCallback) -> None:
         self.error_callback = error_callback
 
@@ -98,8 +100,10 @@ class Interpreter(Visitor[object]):
                         try:
                             return left_value / right_value
                         except ZeroDivisionError as e:
-                            if get_knob('divide_by_zero_error'):
-                                raise LoxRuntimeError(f"Division by zero is not allowed", expr.operator)
+                            if get_knob("divide_by_zero_error"):
+                                raise LoxRuntimeError(  # noqa: B904
+                                    "Division by zero is not allowed", expr.operator
+                                )
                             if left_value == 0.0:
                                 return math.nan
                             elif left_value > 0.0:
@@ -113,17 +117,21 @@ class Interpreter(Visitor[object]):
                     return left_value + right_value
                 elif isinstance(left_value, str) and isinstance(right_value, str):
                     return f"{left_value}{right_value}"
-                elif get_knob('plus_allow_string_mixed_types') and isinstance(left_value, str):
+                elif get_knob("plus_allow_string_mixed_types") and isinstance(left_value, str):
                     right_value = self.stringify(right_value)
                     return f"{left_value}{right_value}"
-                elif get_knob('plus_allow_string_mixed_types') and isinstance(right_value, str):
+                elif get_knob("plus_allow_string_mixed_types") and isinstance(right_value, str):
                     left_value = self.stringify(left_value)
                     return f"{left_value}{right_value}"
-                
-                if get_knob('plus_allow_string_mixed_types'):
-                    raise LoxRuntimeError("Operands must be two numbers, or at least one string", expr.operator)
+
+                if get_knob("plus_allow_string_mixed_types"):
+                    raise LoxRuntimeError(
+                        "Operands must be two numbers, or at least one string", expr.operator
+                    )
                 else:
-                    raise LoxRuntimeError("Operands must be two numbers or two strings", expr.operator)
+                    raise LoxRuntimeError(
+                        "Operands must be two numbers or two strings", expr.operator
+                    )
 
             case TokenType.GREATER:
                 if self.check_number_operand(left_value, expr.operator):

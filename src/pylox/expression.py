@@ -43,8 +43,8 @@ class BinaryExpr(Expr):
 
 
 @runtime_checkable
-class ExprVisitor[R](Protocol):
-    def visit(self, expr: Expr) -> R: ...
+class ExprVisitor[T](Protocol):
+    def visit(self, expr: Expr) -> T: ...
 
 
 class AstPrinter(ExprVisitor[str]):

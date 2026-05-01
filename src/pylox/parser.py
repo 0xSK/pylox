@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from pylox.errors import LoxParserError, TokenErrorCallback
 from pylox.expression import BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr
+from pylox.statement import ExpressionStmt, PrintStmt, Stmt
 from pylox.token import Token, TokenType
 
 
@@ -11,11 +12,29 @@ class Parser:
         self.current: int = 0
         self.error_callback = error_callback
 
-    def parse(self) -> Expr | None:
-        try:
-            return self.parse_expression()
-        except LoxParserError as _:
-            return None
+    def parse(self) -> list[Stmt]:
+        stmts: list[Stmt] = []
+        while not self.is_at_end():
+            stmt = self.parse_statement()
+            stmts.append(stmt)
+        return stmts
+
+    def parse_statement(self) -> Stmt:
+        if self.match(TokenType.PRINT):
+            stmt = self.parse_print_statement()
+        else:
+            stmt = self.parse_expression_statement()
+        return stmt
+
+    def parse_print_statement(self) -> Stmt:
+        expr: Expr = self.parse_expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
+        return PrintStmt(expr)
+
+    def parse_expression_statement(self) -> Stmt:
+        expr: Expr = self.parse_expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
+        return ExpressionStmt(expr)
 
     def parse_expression(self) -> Expr:
         return self.parse_equality()

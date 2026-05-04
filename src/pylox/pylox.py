@@ -12,6 +12,7 @@ class PyLox:
     def __init__(self):
         self.hadError: bool = False
         self.hadRuntimeError: bool = False
+        self.interpreter = Interpreter(self.runtimeError)
 
     def main(self) -> int:
         args = self.parse_args()
@@ -80,15 +81,12 @@ class PyLox:
         tokens: list[Token] = scanner.scan_tokens()
 
         parser = Parser(tokens, self.tokenError)
-        expr = parser.parse()
-        if expr is None or self.hadError:
+        stmts = parser.parse()
+        if self.hadError:
             return
 
-        interpreter = Interpreter(self.runtimeError)
-        value = interpreter.interpret(expr)
-        if self.hadRuntimeError:
-            return
-        print(interpreter.stringify(value))
+        interpreter = self.interpreter
+        interpreter.interpret(stmts)
 
     def print_knobs(self) -> None:
         for name, value_type, value in iter_knobs():

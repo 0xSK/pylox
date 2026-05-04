@@ -42,6 +42,11 @@ class BinaryExpr(Expr):
     right: Expr
 
 
+@dataclass
+class VarExpr(Expr):
+    name: Token
+
+
 @runtime_checkable
 class ExprVisitor[T](Protocol):
     def visit(self, expr: Expr) -> T: ...

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from pylox.expression import Expr
+from pylox.token import Token
 
 
 class Stmt(ABC):  # noqa: B024
@@ -25,3 +26,14 @@ class ExpressionStmt(Stmt):
 @dataclass
 class PrintStmt(Stmt):
     expr: Expr
+
+
+@dataclass
+class VarStmt(Stmt):
+    name: Token
+    initializer: Expr | None
+
+
+@dataclass
+class BlockStmt(Stmt):
+    stmts: list[Stmt]

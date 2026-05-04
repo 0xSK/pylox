@@ -1,8 +1,16 @@
 from collections.abc import Callable
 
 from pylox.errors import LoxParserError, TokenErrorCallback
-from pylox.expression import BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr
-from pylox.statement import ExpressionStmt, PrintStmt, Stmt
+from pylox.expression import (
+    AssignExpr,
+    BinaryExpr,
+    Expr,
+    GroupingExpr,
+    LiteralExpr,
+    UnaryExpr,
+    VarExpr,
+)
+from pylox.statement import BlockStmt, ExpressionStmt, PrintStmt, Stmt, VarStmt
 from pylox.token import Token, TokenType
 
 
@@ -15,16 +23,49 @@ class Parser:
     def parse(self) -> list[Stmt]:
         stmts: list[Stmt] = []
         while not self.is_at_end():
-            stmt = self.parse_statement()
-            stmts.append(stmt)
+            stmt = self.parse_declaration()
+            if stmt is not None:
+                stmts.append(stmt)
         return stmts
+
+    def parse_declaration(self) -> Stmt | None:
+        try:
+            if self.match(TokenType.VAR):
+                return self.parse_var_declaration()
+            else:
+                return self.parse_statement()
+        except LoxParserError:
+            self.synchronize()
+            return None
 
     def parse_statement(self) -> Stmt:
         if self.match(TokenType.PRINT):
             stmt = self.parse_print_statement()
+        elif self.match(TokenType.LEFT_BRACE):
+            stmt = self.parse_block_statement()
         else:
             stmt = self.parse_expression_statement()
         return stmt
+
+    def parse_var_declaration(self) -> Stmt:
+        name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+
+        initializer: Expr | None = None
+        if self.match(TokenType.EQUAL):
+            initializer = self.parse_expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
+
+        return VarStmt(name, initializer)
+
+    def parse_block_statement(self) -> Stmt:
+        stmts: list[Stmt] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            stmt = self.parse_declaration()
+            if stmt is not None:
+                stmts.append(stmt)
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        return BlockStmt(stmts)
 
     def parse_print_statement(self) -> Stmt:
         expr: Expr = self.parse_expression()
@@ -37,7 +78,22 @@ class Parser:
         return ExpressionStmt(expr)
 
     def parse_expression(self) -> Expr:
-        return self.parse_equality()
+        return self.parse_assignment()
+
+    def parse_assignment(self) -> Expr:
+        expr = self.parse_equality()
+
+        if self.match(TokenType.EQUAL):
+            equals: Token = self.previous()
+            value: Expr = self.parse_assignment()
+
+            if isinstance(expr, VarExpr):
+                return AssignExpr(expr.name, value)
+
+            else:
+                self.error(equals, "Invalid assignment target.")
+
+        return expr
 
     def parse_equality(self) -> Expr:
         return self.parse_binary(self.parse_comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)
@@ -82,6 +138,8 @@ class Parser:
             expr = LiteralExpr(True)
         elif self.match(TokenType.NIL):
             expr = LiteralExpr(None)
+        elif self.match(TokenType.IDENTIFIER):
+            expr = VarExpr(self.previous())
         elif self.match(TokenType.NUMBER, TokenType.STRING):
             expr = LiteralExpr(value=self.previous().literal)
         elif self.match(TokenType.LEFT_PAREN):

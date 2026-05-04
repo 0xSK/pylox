@@ -1,33 +1,40 @@
 import math
 from functools import singledispatchmethod
-from typing import TypeGuard
+from typing import Any, TypeGuard
 
+from pylox.environment import Environment
 from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeErrorCallback
 from pylox.expression import (
+    AssignExpr,
     BinaryExpr,
     Expr,
     ExprVisitor,
     GroupingExpr,
     LiteralExpr,
     UnaryExpr,
+    VarExpr,
 )
 from pylox.knobs import get_knob
-from pylox.statement import StmtVisitor
+from pylox.statement import BlockStmt, ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt
 from pylox.token import Token, TokenType
 
 
 class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     def __init__(self, error_callback: RuntimeErrorCallback) -> None:
         self.error_callback = error_callback
+        self.environment = Environment()
 
-    def interpret(self, expr: Expr) -> object:
+    def interpret(self, stmts: list[Stmt]) -> None:
         try:
-            value = self.evaluate(expr)
-            return value
+            for stmt in stmts:
+                self.execute(stmt)
         except LoxRuntimeError as e:
             self.error_callback(e)
         except Exception as e:
             raise PyloxImpossibleCaseError() from e
+
+    def execute(self, stmt: Stmt) -> object:
+        return stmt.accept(self)
 
     def evaluate(self, expr: Expr) -> object:
         return expr.accept(self)
@@ -52,8 +59,40 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
         raise PyloxImpossibleCaseError()
 
     @singledispatchmethod
-    def visit(self, expr: Expr) -> object:  # pyright: ignore[reportIncompatibleMethodOverride]
-        raise NotImplementedError(f"The `visit` dispatcher for {type(expr)} objects is not defined")
+    def visit(self, invalidArg: Any) -> object:  # pyright: ignore[reportIncompatibleMethodOverride]
+        raise NotImplementedError(
+            f"The `visit` dispatcher for {type(invalidArg)} objects is not defined"
+        )
+
+    @visit.register
+    def _(self, stmt: ExpressionStmt) -> object:
+        self.evaluate(stmt.expr)
+        return None
+
+    @visit.register
+    def _(self, stmt: PrintStmt) -> object:
+        value = self.evaluate(stmt.expr)
+        print(self.stringify(value))
+        return None
+
+    @visit.register
+    def _(self, stmt: VarStmt) -> None:
+        value: object = None
+        if stmt.initializer is not None:
+            value = self.evaluate(stmt.initializer)
+        self.environment.define(stmt.name.lexeme, value)
+
+    @visit.register
+    def _(self, stmt: BlockStmt) -> None:
+        previousEnv = self.environment
+
+        try:
+            self.environment = Environment(enclosing=previousEnv)
+            for _stmt in stmt.stmts:
+                self.execute(_stmt)
+        finally:
+            # cleanup, restore original env
+            self.environment = previousEnv
 
     @visit.register
     def _(self, expr: GroupingExpr) -> object:
@@ -62,6 +101,16 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     @visit.register
     def _(self, expr: LiteralExpr) -> object:
         return expr.value
+
+    @visit.register
+    def _(self, expr: VarExpr) -> object:
+        return self.environment.get(expr.name)
+
+    @visit.register
+    def _(self, expr: AssignExpr) -> object:
+        value: object = self.evaluate(expr.value)
+        self.environment.assign(expr.name, value)
+        return value
 
     @visit.register
     def _(self, expr: UnaryExpr) -> object:

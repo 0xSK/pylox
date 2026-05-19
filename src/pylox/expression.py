@@ -52,6 +52,13 @@ class VarExpr(Expr):
     name: Token
 
 
+@dataclass
+class CallExpr(Expr):
+    callee: Expr
+    closingParen: Token
+    arguments: list[Expr]
+
+
 @runtime_checkable
 class ExprVisitor[T](Protocol):
     def visit(self, expr: Expr) -> T: ...

@@ -1,13 +1,16 @@
 import math
+import time
 from functools import singledispatchmethod
 from typing import Any, TypeGuard
 
+from pylox.callable import LoxCallable
 from pylox.environment import Environment
 from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeErrorCallback
 from pylox.expression import (
     AssignExpr,
     BinaryExpr,
     BinaryLogicalExpr,
+    CallExpr,
     Expr,
     ExprVisitor,
     GroupingExpr,
@@ -32,7 +35,24 @@ from pylox.token import Token, TokenType
 class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     def __init__(self, error_callback: RuntimeErrorCallback) -> None:
         self.error_callback = error_callback
-        self.environment = Environment()
+        self.globals = Environment()
+        self.environment = self.globals
+
+        self._add_builtin_globals()
+
+    def _add_builtin_globals(self) -> None:
+        class Clock(LoxCallable):
+            @property
+            def arity(self) -> int:
+                return 0
+
+            def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+                return time.time()
+
+            def __str__(self) -> str:
+                return "<native fn>"
+
+        self.globals.define("clock", Clock())
 
     def interpret(self, stmts: list[Stmt]) -> None:
         try:
@@ -247,6 +267,22 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 PyloxImpossibleCaseError(f"Unexpected token type: {t}")
 
         PyloxImpossibleCaseError()
+
+    @visit.register
+    def _(self, expr: CallExpr) -> object:
+        callee: object = self.evaluate(expr.callee)
+
+        arguments: list[object] = [self.evaluate(argument) for argument in expr.arguments]
+
+        if not isinstance(callee, LoxCallable):
+            raise LoxRuntimeError("Can only call functions and classes.", expr.closingParen)
+
+        if len(arguments) != callee.arity:
+            raise LoxRuntimeError(
+                f"Expected {callee.arity} arguments but got {len(arguments)}.", expr.closingParen
+            )
+
+        return callee.call(self, arguments)
 
     def is_truthy(self, value: object) -> bool:
         if value is False or value is None:

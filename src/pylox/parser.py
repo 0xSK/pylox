@@ -5,6 +5,7 @@ from pylox.expression import (
     AssignExpr,
     BinaryExpr,
     BinaryLogicalExpr,
+    CallExpr,
     Expr,
     GroupingExpr,
     LiteralExpr,
@@ -207,9 +208,34 @@ class Parser:
             right_expr: Expr = self.parse_unary()
             expr = UnaryExpr(operator, right_expr)
         else:
-            expr = self.parse_primary()
+            expr = self.parse_call()
 
         return expr
+
+    def parse_call(self) -> Expr:
+        expr = self.parse_primary()
+
+        while True:
+            if self.match(TokenType.LEFT_PAREN):
+                expr = self.finish_parsing_call(expr)
+            else:
+                break
+
+        return expr
+
+    def finish_parsing_call(self, callee: Expr) -> Expr:
+        arguments: list[Expr] = []
+        if not self.check(TokenType.RIGHT_PAREN):
+            while True:
+                if len(arguments) > 255:
+                    self.error(self.peek(), "Can't have more than 255 arguments.")
+                arguments.append(self.parse_expression())
+                if not self.match(TokenType.COMMA):
+                    break
+
+        closingParen: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+
+        return CallExpr(callee, closingParen, arguments)
 
     def parse_primary(self) -> Expr:
         if self.match(TokenType.FALSE):

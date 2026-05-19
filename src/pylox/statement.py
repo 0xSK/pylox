@@ -37,3 +37,10 @@ class VarStmt(Stmt):
 @dataclass
 class BlockStmt(Stmt):
     stmts: list[Stmt]
+
+
+@dataclass
+class IfStmt(Stmt):
+    condition: Expr
+    thenBranch: Stmt
+    elseBranch: Stmt | None

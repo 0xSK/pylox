@@ -7,6 +7,7 @@ from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeError
 from pylox.expression import (
     AssignExpr,
     BinaryExpr,
+    BinaryLogicalExpr,
     Expr,
     ExprVisitor,
     GroupingExpr,
@@ -15,7 +16,7 @@ from pylox.expression import (
     VarExpr,
 )
 from pylox.knobs import get_knob
-from pylox.statement import BlockStmt, ExpressionStmt, PrintStmt, Stmt, StmtVisitor, VarStmt
+from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, StmtVisitor, VarStmt
 from pylox.token import Token, TokenType
 
 
@@ -95,6 +96,13 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
             self.environment = previousEnv
 
     @visit.register
+    def _(self, stmt: IfStmt) -> None:
+        if self.is_truthy(self.evaluate(stmt.condition)):
+            self.execute(stmt.thenBranch)
+        elif stmt.elseBranch is not None:
+            self.execute(stmt.elseBranch)
+
+    @visit.register
     def _(self, expr: GroupingExpr) -> object:
         return self.evaluate(expr.expression)
 
@@ -126,6 +134,19 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 PyloxImpossibleCaseError(f"Unexpected token type: {t}")
 
         PyloxImpossibleCaseError()
+
+    @visit.register
+    def _(self, expr: BinaryLogicalExpr) -> object:
+        left_value: object = self.evaluate(expr.left)
+
+        if expr.operator.type is TokenType.OR and self.is_truthy(left_value):
+            return left_value
+        elif expr.operator.type is TokenType.AND and not self.is_truthy(left_value):
+            return left_value
+
+        right_value: object = self.evaluate(expr.right)
+
+        return right_value
 
     @visit.register
     def _(self, expr: BinaryExpr) -> object:

@@ -4,13 +4,14 @@ from pylox.errors import LoxParserError, TokenErrorCallback
 from pylox.expression import (
     AssignExpr,
     BinaryExpr,
+    BinaryLogicalExpr,
     Expr,
     GroupingExpr,
     LiteralExpr,
     UnaryExpr,
     VarExpr,
 )
-from pylox.statement import BlockStmt, ExpressionStmt, PrintStmt, Stmt, VarStmt
+from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt
 from pylox.token import Token, TokenType
 
 
@@ -39,13 +40,27 @@ class Parser:
             return None
 
     def parse_statement(self) -> Stmt:
-        if self.match(TokenType.PRINT):
+        if self.match(TokenType.IF):
+            stmt = self.parse_if_statement()
+        elif self.match(TokenType.PRINT):
             stmt = self.parse_print_statement()
         elif self.match(TokenType.LEFT_BRACE):
             stmt = self.parse_block_statement()
         else:
             stmt = self.parse_expression_statement()
         return stmt
+
+    def parse_if_statement(self) -> Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
+        condition: Expr = self.parse_expression()
+        self.consume(TokenType.LEFT_PAREN, "Expect ')' after if condition.")
+        thenBranch: Stmt = self.parse_statement()
+
+        elseBranch: Stmt | None = None
+        if self.match(TokenType.ELSE):
+            elseBranch = self.parse_statement()
+
+        return IfStmt(condition, thenBranch, elseBranch)
 
     def parse_var_declaration(self) -> Stmt:
         name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
@@ -81,7 +96,7 @@ class Parser:
         return self.parse_assignment()
 
     def parse_assignment(self) -> Expr:
-        expr = self.parse_equality()
+        expr = self.parse_or()
 
         if self.match(TokenType.EQUAL):
             equals: Token = self.previous()
@@ -94,6 +109,20 @@ class Parser:
                 self.error(equals, "Invalid assignment target.")
 
         return expr
+
+    def parse_or(self) -> Expr:
+        return self.parse_binary(
+            self.parse_and,
+            TokenType.OR,
+            expressionType=BinaryLogicalExpr,
+        )
+
+    def parse_and(self) -> Expr:
+        return self.parse_binary(
+            self.parse_equality,
+            TokenType.AND,
+            expressionType=BinaryLogicalExpr,
+        )
 
     def parse_equality(self) -> Expr:
         return self.parse_binary(self.parse_comparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)
@@ -113,12 +142,17 @@ class Parser:
     def parse_factor(self) -> Expr:
         return self.parse_binary(self.parse_unary, TokenType.SLASH, TokenType.STAR)
 
-    def parse_binary(self, next_rule: Callable[[], Expr], *operators: TokenType) -> Expr:
+    def parse_binary(
+        self,
+        next_rule: Callable[[], Expr],
+        *operators: TokenType,
+        expressionType: type[BinaryExpr] = BinaryExpr,
+    ) -> Expr:
         expr: Expr = next_rule()
         while self.match(*operators):
             operator: Token = self.previous()
             right_expr: Expr = next_rule()
-            expr = BinaryExpr(expr, operator, right_expr)
+            expr = expressionType(expr, operator, right_expr)
         return expr
 
     def parse_unary(self) -> Expr:

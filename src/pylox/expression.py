@@ -43,6 +43,11 @@ class BinaryExpr(Expr):
 
 
 @dataclass
+class BinaryLogicalExpr(BinaryExpr):
+    pass
+
+
+@dataclass
 class VarExpr(Expr):
     name: Token
 

@@ -11,7 +11,7 @@ from pylox.expression import (
     UnaryExpr,
     VarExpr,
 )
-from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt
+from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt, WhileStmt
 from pylox.token import Token, TokenType
 
 
@@ -44,6 +44,10 @@ class Parser:
             stmt = self.parse_if_statement()
         elif self.match(TokenType.PRINT):
             stmt = self.parse_print_statement()
+        elif self.match(TokenType.WHILE):
+            stmt = self.parse_while_statement()
+        elif self.match(TokenType.FOR):
+            stmt = self.parse_for_statement()
         elif self.match(TokenType.LEFT_BRACE):
             stmt = self.parse_block_statement()
         else:
@@ -86,6 +90,48 @@ class Parser:
         expr: Expr = self.parse_expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return PrintStmt(expr)
+
+    def parse_while_statement(self) -> Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+        condition: Expr = self.parse_expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
+        body: Stmt = self.parse_statement()
+        return WhileStmt(condition, body)
+
+    def parse_for_statement(self) -> Stmt:
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+
+        initializer: Stmt | None
+        if self.match(TokenType.SEMICOLON):
+            initializer = None
+        elif self.match(TokenType.VAR):
+            initializer = self.parse_var_declaration()
+        else:
+            initializer = self.parse_expression_statement()
+
+        condition: Expr | None = None
+        if not self.check(TokenType.SEMICOLON):
+            condition = self.parse_expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+        increment: Expr | None = None
+        if not self.check(TokenType.RIGHT_PAREN):
+            increment = self.parse_expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
+
+        body: Stmt = self.parse_statement()
+
+        if increment is not None:
+            body = BlockStmt([body, ExpressionStmt(increment)])
+        if condition is None:
+            condition = LiteralExpr(True)
+
+        stmt = WhileStmt(condition, body)
+
+        if initializer is not None:
+            stmt = BlockStmt([initializer, stmt])
+
+        return stmt
 
     def parse_expression_statement(self) -> Stmt:
         expr: Expr = self.parse_expression()

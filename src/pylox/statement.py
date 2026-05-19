@@ -44,3 +44,9 @@ class IfStmt(Stmt):
     condition: Expr
     thenBranch: Stmt
     elseBranch: Stmt | None
+
+
+@dataclass
+class WhileStmt(Stmt):
+    condition: Expr
+    body: Stmt

@@ -16,7 +16,16 @@ from pylox.expression import (
     VarExpr,
 )
 from pylox.knobs import get_knob
-from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, StmtVisitor, VarStmt
+from pylox.statement import (
+    BlockStmt,
+    ExpressionStmt,
+    IfStmt,
+    PrintStmt,
+    Stmt,
+    StmtVisitor,
+    VarStmt,
+    WhileStmt,
+)
 from pylox.token import Token, TokenType
 
 
@@ -82,6 +91,11 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
         if stmt.initializer is not None:
             value = self.evaluate(stmt.initializer)
         self.environment.define(stmt.name.lexeme, value)
+
+    @visit.register
+    def _(self, stmt: WhileStmt) -> None:
+        while self.is_truthy(self.evaluate(stmt.condition)):
+            self.execute(stmt.body)
 
     @visit.register
     def _(self, stmt: BlockStmt) -> None:

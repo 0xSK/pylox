@@ -12,7 +12,16 @@ from pylox.expression import (
     UnaryExpr,
     VarExpr,
 )
-from pylox.statement import BlockStmt, ExpressionStmt, IfStmt, PrintStmt, Stmt, VarStmt, WhileStmt
+from pylox.statement import (
+    BlockStmt,
+    ExpressionStmt,
+    FunctionStmt,
+    IfStmt,
+    PrintStmt,
+    Stmt,
+    VarStmt,
+    WhileStmt,
+)
 from pylox.token import Token, TokenType
 
 
@@ -32,13 +41,35 @@ class Parser:
 
     def parse_declaration(self) -> Stmt | None:
         try:
-            if self.match(TokenType.VAR):
+            if self.match(TokenType.FUN):
+                return self.parse_function_declaration("function")
+            elif self.match(TokenType.VAR):
                 return self.parse_var_declaration()
             else:
                 return self.parse_statement()
         except LoxParserError:
             self.synchronize()
             return None
+
+    def parse_function_declaration(self, kind: str) -> Stmt:
+        name = self.consume(TokenType.IDENTIFIER, f"Expect {kind} name.")
+
+        params: list[Token] = []
+        self.consume(TokenType.LEFT_PAREN, f"Expect '(' after {kind} name.")
+        if not self.check(TokenType.RIGHT_PAREN):
+            while True:
+                if len(params) >= 255:
+                    self.error(self.peek(), "Can't have more than 255 parameters.")
+                params.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+
+                if not self.match(TokenType.COMMA):
+                    break
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+
+        self.consume(TokenType.LEFT_BRACE, f"Expect '{{' before {kind} body.")
+        body = self.parse_block_statement()
+
+        return FunctionStmt(name, params, body)
 
     def parse_statement(self) -> Stmt:
         if self.match(TokenType.IF):
@@ -77,7 +108,7 @@ class Parser:
 
         return VarStmt(name, initializer)
 
-    def parse_block_statement(self) -> Stmt:
+    def parse_block_statement(self) -> BlockStmt:
         stmts: list[Stmt] = []
         while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
             stmt = self.parse_declaration()
@@ -227,7 +258,7 @@ class Parser:
         arguments: list[Expr] = []
         if not self.check(TokenType.RIGHT_PAREN):
             while True:
-                if len(arguments) > 255:
+                if len(arguments) >= 255:
                     self.error(self.peek(), "Can't have more than 255 arguments.")
                 arguments.append(self.parse_expression())
                 if not self.match(TokenType.COMMA):

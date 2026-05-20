@@ -3,7 +3,6 @@ import time
 from functools import singledispatchmethod
 from typing import Any, TypeGuard
 
-from pylox.callable import LoxCallable
 from pylox.environment import Environment
 from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeErrorCallback
 from pylox.expression import (
@@ -18,10 +17,12 @@ from pylox.expression import (
     UnaryExpr,
     VarExpr,
 )
+from pylox.function import LoxCallable, LoxFunction
 from pylox.knobs import get_knob
 from pylox.statement import (
     BlockStmt,
     ExpressionStmt,
+    FunctionStmt,
     IfStmt,
     PrintStmt,
     Stmt,
@@ -88,6 +89,15 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
             return f'"{value}"'
         raise PyloxImpossibleCaseError()
 
+    def executeBlock(self, block: BlockStmt, environment: Environment) -> None:
+        previousEnvironment = self.environment
+        try:
+            self.environment = environment
+            for stmt in block.stmts:
+                self.execute(stmt)
+        finally:
+            self.environment = previousEnvironment
+
     @singledispatchmethod
     def visit(self, invalidArg: Any) -> object:  # pyright: ignore[reportIncompatibleMethodOverride]
         raise NotImplementedError(
@@ -119,15 +129,7 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
 
     @visit.register
     def _(self, stmt: BlockStmt) -> None:
-        previousEnv = self.environment
-
-        try:
-            self.environment = Environment(enclosing=previousEnv)
-            for _stmt in stmt.stmts:
-                self.execute(_stmt)
-        finally:
-            # cleanup, restore original env
-            self.environment = previousEnv
+        self.executeBlock(stmt, Environment(self.environment))
 
     @visit.register
     def _(self, stmt: IfStmt) -> None:
@@ -135,6 +137,11 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
             self.execute(stmt.thenBranch)
         elif stmt.elseBranch is not None:
             self.execute(stmt.elseBranch)
+
+    @visit.register
+    def _(self, stmt: FunctionStmt) -> None:
+        function = LoxFunction(stmt)
+        self.environment.define(stmt.name.lexeme, function)
 
     @visit.register
     def _(self, expr: GroupingExpr) -> object:

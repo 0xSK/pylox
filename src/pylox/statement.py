@@ -50,3 +50,10 @@ class IfStmt(Stmt):
 class WhileStmt(Stmt):
     condition: Expr
     body: Stmt
+
+
+@dataclass
+class FunctionStmt(Stmt):
+    name: Token
+    params: list[Token]
+    body: BlockStmt

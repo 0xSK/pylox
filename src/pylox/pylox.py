@@ -4,6 +4,7 @@ from pylox.exceptions import LoxRuntimeError
 from pylox.interpreter import Interpreter
 from pylox.knobs import KnobConfigurationError, initialize_knobs, iter_knobs
 from pylox.parser import Parser
+from pylox.resolver import Resolver
 from pylox.scanner import Scanner
 from pylox.token import Token, TokenType
 
@@ -82,6 +83,11 @@ class PyLox:
 
         parser = Parser(tokens, self.tokenError)
         stmts = parser.parse()
+        if self.hadError:
+            return
+
+        resolver = Resolver(self.interpreter, self.tokenError)
+        resolver.resolve(stmts)
         if self.hadError:
             return
 

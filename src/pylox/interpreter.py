@@ -44,6 +44,7 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
         self.error_callback = error_callback
         self.globals = Environment()
         self.environment = self.globals
+        self.locals: dict[Expr, int] = {}
 
         self._add_builtin_globals()
 
@@ -81,6 +82,9 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     def evaluate(self, expr: Expr) -> object:
         return expr.accept(self)
 
+    def resolve(self, expr: Expr, depth: int) -> None:
+        self.locals[expr] = depth
+
     def stringify(self, value: object) -> str:
         if value is None:
             return "nil"
@@ -108,6 +112,13 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 self.execute(stmt)
         finally:
             self.environment = previousEnvironment
+
+    def lookup_variable(self, name: Token, expr: Expr) -> object:
+        distance = self.locals.get(expr, None)
+        if distance is None:
+            return self.globals.get(name)
+        else:
+            return self.environment.get_at(distance, name.lexeme)
 
     @singledispatchmethod
     def visit(self, invalidArg: Any) -> object:  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -172,12 +183,16 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
 
     @visit.register
     def _(self, expr: VarExpr) -> object:
-        return self.environment.get(expr.name)
+        return self.lookup_variable(expr.name, expr)
 
     @visit.register
     def _(self, expr: AssignExpr) -> object:
         value: object = self.evaluate(expr.value)
-        self.environment.assign(expr.name, value)
+        distance = self.locals.get(expr, None)
+        if distance is None:
+            return self.globals.assign(expr.name, value)
+        else:
+            return self.environment.assign_at(distance, expr.name, value)
         return value
 
     @visit.register

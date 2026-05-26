@@ -21,13 +21,14 @@ class LoxCallable(Protocol):
 @dataclass
 class LoxFunction(LoxCallable):
     declaration: FunctionStmt
+    closure: Environment
 
     @property
     def arity(self) -> int:
         return len(self.declaration.params)
 
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
-        environment = Environment(interpreter.globals)
+        environment = Environment(self.closure)
         for param, argument in zip(self.declaration.params, arguments, strict=True):
             environment.define(param.lexeme, argument)
 

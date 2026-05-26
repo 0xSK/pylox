@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from pylox.errors import LoxParserError, TokenErrorCallback
+from pylox.exceptions import LoxParserError, TokenErrorCallback
 from pylox.expression import (
     AssignExpr,
     BinaryExpr,
@@ -18,6 +18,7 @@ from pylox.statement import (
     FunctionStmt,
     IfStmt,
     PrintStmt,
+    ReturnStmt,
     Stmt,
     VarStmt,
     WhileStmt,
@@ -76,6 +77,8 @@ class Parser:
             stmt = self.parse_if_statement()
         elif self.match(TokenType.PRINT):
             stmt = self.parse_print_statement()
+        elif self.match(TokenType.RETURN):
+            stmt = self.parse_return_statement()
         elif self.match(TokenType.WHILE):
             stmt = self.parse_while_statement()
         elif self.match(TokenType.FOR):
@@ -129,6 +132,17 @@ class Parser:
         self.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
         body: Stmt = self.parse_statement()
         return WhileStmt(condition, body)
+
+    def parse_return_statement(self) -> Stmt:
+        keyword = self.previous()
+        value = None
+
+        if not self.check(TokenType.SEMICOLON):
+            value = self.parse_expression()
+
+        self.consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+
+        return ReturnStmt(keyword, value)
 
     def parse_for_statement(self) -> Stmt:
         self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")

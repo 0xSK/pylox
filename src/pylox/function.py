@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pylox.environment import Environment
+from pylox.exceptions import LoxReturn
 from pylox.statement import FunctionStmt
 
 if TYPE_CHECKING:
@@ -30,7 +31,11 @@ class LoxFunction(LoxCallable):
         for param, argument in zip(self.declaration.params, arguments, strict=True):
             environment.define(param.lexeme, argument)
 
-        interpreter.executeBlock(self.declaration.body, Environment(environment))
+        try:
+            interpreter.executeBlock(self.declaration.body, Environment(environment))
+        except LoxReturn as ret:
+            return ret.value
+
         return None
 
     def __str__(self) -> str:

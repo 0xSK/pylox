@@ -4,7 +4,12 @@ from functools import singledispatchmethod
 from typing import Any, TypeGuard
 
 from pylox.environment import Environment
-from pylox.errors import LoxRuntimeError, PyloxImpossibleCaseError, RuntimeErrorCallback
+from pylox.exceptions import (
+    LoxReturn,
+    LoxRuntimeError,
+    PyloxImpossibleCaseError,
+    RuntimeErrorCallback,
+)
 from pylox.expression import (
     AssignExpr,
     BinaryExpr,
@@ -25,6 +30,7 @@ from pylox.statement import (
     FunctionStmt,
     IfStmt,
     PrintStmt,
+    ReturnStmt,
     Stmt,
     StmtVisitor,
     VarStmt,
@@ -61,6 +67,11 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 self.execute(stmt)
         except LoxRuntimeError as e:
             self.error_callback(e)
+        except LoxReturn as e:
+            if not isinstance(stmt, ReturnStmt):  # pyright: ignore[reportPossiblyUnboundVariable]
+                raise PyloxImpossibleCaseError() from e
+            wrappedError = LoxRuntimeError("Unexpected return outside of a function", stmt.keyword)
+            self.error_callback(wrappedError)
         except Exception as e:
             raise PyloxImpossibleCaseError() from e
 
@@ -126,6 +137,14 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     def _(self, stmt: WhileStmt) -> None:
         while self.is_truthy(self.evaluate(stmt.condition)):
             self.execute(stmt.body)
+
+    @visit.register
+    def _(self, stmt: ReturnStmt) -> None:
+        returnValue: object = None
+        if isinstance(stmt.value, Expr):
+            returnValue = self.evaluate(stmt.value)
+
+        raise LoxReturn(returnValue)
 
     @visit.register
     def _(self, stmt: BlockStmt) -> None:

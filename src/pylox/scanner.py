@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pylox.errors import LineErrorCallback
+from pylox.exceptions import LineErrorCallback
 from pylox.token import Token, TokenType
 
 

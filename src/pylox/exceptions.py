@@ -18,7 +18,11 @@ class RuntimeErrorCallback(Protocol):
     def __call__(self, error: LoxRuntimeError) -> None: ...
 
 
-class LoxErrorBase(Exception, ABC):
+class LoxExceptionBase(Exception, ABC):
+    pass
+
+
+class LoxErrorBase(LoxExceptionBase, ABC):
     pass
 
 
@@ -30,6 +34,12 @@ class LoxRuntimeError(LoxErrorBase):
     def __init__(self, message: str, token: Token):
         super().__init__(message)
         self.token = token
+
+
+class LoxReturn(LoxExceptionBase):
+    def __init__(self, value: object):
+        super().__init__()
+        self.value = value
 
 
 class PyloxImpossibleCaseError(Exception):

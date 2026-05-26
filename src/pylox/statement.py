@@ -57,3 +57,9 @@ class FunctionStmt(Stmt):
     name: Token
     params: list[Token]
     body: BlockStmt
+
+
+@dataclass
+class ReturnStmt(Stmt):
+    keyword: Token
+    value: Expr | None

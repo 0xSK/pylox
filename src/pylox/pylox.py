@@ -1,6 +1,6 @@
 import argparse
 
-from pylox.errors import LoxRuntimeError
+from pylox.exceptions import LoxRuntimeError
 from pylox.interpreter import Interpreter
 from pylox.knobs import KnobConfigurationError, initialize_knobs, iter_knobs
 from pylox.parser import Parser

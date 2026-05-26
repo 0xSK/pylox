@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pylox.errors import LoxRuntimeError
+from pylox.exceptions import LoxRuntimeError
 from pylox.token import Token
 
 

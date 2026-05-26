@@ -68,11 +68,6 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 self.execute(stmt)
         except LoxRuntimeError as e:
             self.error_callback(e)
-        except LoxReturn as e:
-            if not isinstance(stmt, ReturnStmt):  # pyright: ignore[reportPossiblyUnboundVariable]
-                raise PyloxImpossibleCaseError() from e
-            wrappedError = LoxRuntimeError("Unexpected return outside of a function", stmt.keyword)
-            self.error_callback(wrappedError)
         except Exception as e:
             raise PyloxImpossibleCaseError() from e
 

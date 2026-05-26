@@ -3,9 +3,14 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass
 from functools import singledispatchmethod
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, dataclass_transform, runtime_checkable
 
 from pylox.token import Token
+
+
+@dataclass_transform(frozen_default=True, eq_default=False)
+def ast_node[T](cls: type[T]) -> type[T]:
+    return dataclass(frozen=True, eq=False)(cls)
 
 
 class Expr(ABC):  # noqa: B024
@@ -13,46 +18,46 @@ class Expr(ABC):  # noqa: B024
         return visitor.visit(self)
 
 
-@dataclass(frozen=True)
+@ast_node
 class AssignExpr(Expr):
     name: Token
     value: Expr
 
 
-@dataclass(frozen=True)
+@ast_node
 class GroupingExpr(Expr):
     expression: Expr
 
 
-@dataclass(frozen=True)
+@ast_node
 class LiteralExpr(Expr):
     value: Any
 
 
-@dataclass(frozen=True)
+@ast_node
 class UnaryExpr(Expr):
     operator: Token
     right: Expr
 
 
-@dataclass(frozen=True)
+@ast_node
 class BinaryExpr(Expr):
     left: Expr
     operator: Token
     right: Expr
 
 
-@dataclass(frozen=True)
+@ast_node
 class BinaryLogicalExpr(BinaryExpr):
     pass
 
 
-@dataclass(frozen=True)
+@ast_node
 class VarExpr(Expr):
     name: Token
 
 
-@dataclass(frozen=True)
+@ast_node
 class CallExpr(Expr):
     callee: Expr
     closingParen: Token

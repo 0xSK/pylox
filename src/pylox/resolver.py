@@ -12,6 +12,7 @@ from pylox.expression import (
     CallExpr,
     Expr,
     ExprVisitor,
+    GroupingExpr,
     LiteralExpr,
     UnaryExpr,
     VarExpr,
@@ -93,8 +94,8 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
 
         self.begin_scope()
         for param in stmt.params:
-            self.define(param)
             self.declare(param)
+            self.define(param)
         self.resolve_stmt(stmt.body)
         self.end_scope()
 
@@ -121,8 +122,8 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
 
     @visit.register
     def _(self, stmt: FunctionStmt) -> None:
-        self.define(stmt.name)
         self.declare(stmt.name)
+        self.define(stmt.name)
         self.resolve_function(stmt, FunctionType.FUNCTION)
 
     @visit.register
@@ -154,7 +155,7 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
 
     @visit.register
     def _(self, expr: VarExpr) -> None:
-        if self.scopes and self.peek_scope[expr.name.lexeme] is False:
+        if self.scopes and self.peek_scope.get(expr.name.lexeme) is False:
             self.error_callback(expr.name, "Can't read local variable in its own initializer.")
 
         self.resolve_local(expr, expr.name)
@@ -167,6 +168,10 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
     @visit.register
     def _(self, expr: UnaryExpr) -> None:
         self.resolve_expr(expr.right)
+
+    @visit.register
+    def _(self, expr: GroupingExpr) -> None:
+        self.resolve_expr(expr.expression)
 
     @visit.register
     def _(self, expr: BinaryExpr) -> None:

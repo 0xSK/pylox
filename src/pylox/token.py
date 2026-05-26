@@ -57,7 +57,7 @@ class TokenType(Enum):
     UNIMPLEMENTED = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class Token:
     type: TokenType
     lexeme: str

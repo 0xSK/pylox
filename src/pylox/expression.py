@@ -13,46 +13,46 @@ class Expr(ABC):  # noqa: B024
         return visitor.visit(self)
 
 
-@dataclass
+@dataclass(frozen=True)
 class AssignExpr(Expr):
     name: Token
     value: Expr
 
 
-@dataclass
+@dataclass(frozen=True)
 class GroupingExpr(Expr):
     expression: Expr
 
 
-@dataclass
+@dataclass(frozen=True)
 class LiteralExpr(Expr):
     value: Any
 
 
-@dataclass
+@dataclass(frozen=True)
 class UnaryExpr(Expr):
     operator: Token
     right: Expr
 
 
-@dataclass
+@dataclass(frozen=True)
 class BinaryExpr(Expr):
     left: Expr
     operator: Token
     right: Expr
 
 
-@dataclass
+@dataclass(frozen=True)
 class BinaryLogicalExpr(BinaryExpr):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class VarExpr(Expr):
     name: Token
 
 
-@dataclass
+@dataclass(frozen=True)
 class CallExpr(Expr):
     callee: Expr
     closingParen: Token

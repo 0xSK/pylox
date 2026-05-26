@@ -92,7 +92,7 @@ class Parser:
     def parse_if_statement(self) -> Stmt:
         self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
         condition: Expr = self.parse_expression()
-        self.consume(TokenType.LEFT_PAREN, "Expect ')' after if condition.")
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
         thenBranch: Stmt = self.parse_statement()
 
         elseBranch: Stmt | None = None

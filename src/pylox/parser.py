@@ -14,6 +14,7 @@ from pylox.expression import (
 )
 from pylox.statement import (
     BlockStmt,
+    ClassStmt,
     ExpressionStmt,
     FunctionStmt,
     IfStmt,
@@ -42,7 +43,9 @@ class Parser:
 
     def parse_declaration(self) -> Stmt | None:
         try:
-            if self.match(TokenType.FUN):
+            if self.match(TokenType.CLASS):
+                return self.parse_class_declaration()
+            elif self.match(TokenType.FUN):
                 return self.parse_function_declaration("function")
             elif self.match(TokenType.VAR):
                 return self.parse_var_declaration()
@@ -52,7 +55,19 @@ class Parser:
             self.synchronize()
             return None
 
-    def parse_function_declaration(self, kind: str) -> Stmt:
+    def parse_class_declaration(self) -> ClassStmt:
+        name = self.consume(TokenType.IDENTIFIER, "Expect class name.")
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.")
+
+        methods: list[FunctionStmt] = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            methods.append(self.parse_function_declaration("method"))
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
+
+        return ClassStmt(name, methods)
+
+    def parse_function_declaration(self, kind: str) -> FunctionStmt:
         name = self.consume(TokenType.IDENTIFIER, f"Expect {kind} name.")
 
         params: list[Token] = []

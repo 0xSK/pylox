@@ -24,8 +24,10 @@ from pylox.expression import (
 )
 from pylox.function import LoxCallable, LoxFunction
 from pylox.knobs import get_knob
+from pylox.loxclass import LoxClass
 from pylox.statement import (
     BlockStmt,
+    ClassStmt,
     ExpressionStmt,
     FunctionStmt,
     IfStmt,
@@ -97,7 +99,8 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
             )
         if isinstance(value, str):
             return f'"{value}"'
-        raise PyloxImpossibleCaseError()
+
+        return str(value)
 
     def executeBlock(self, block: BlockStmt, environment: Environment) -> None:
         previousEnvironment = self.environment
@@ -155,6 +158,12 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     @visit.register
     def _(self, stmt: BlockStmt) -> None:
         self.executeBlock(stmt, Environment(self.environment))
+
+    @visit.register
+    def _(self, stmt: ClassStmt) -> None:
+        self.environment.define(stmt.name.lexeme, None)
+        klass = LoxClass(stmt.name.lexeme)
+        self.environment.assign(stmt.name, klass)
 
     @visit.register
     def _(self, stmt: IfStmt) -> None:

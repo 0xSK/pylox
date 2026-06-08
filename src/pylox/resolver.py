@@ -20,6 +20,7 @@ from pylox.expression import (
 from pylox.interpreter import Interpreter
 from pylox.statement import (
     BlockStmt,
+    ClassStmt,
     ExpressionStmt,
     FunctionStmt,
     IfStmt,
@@ -112,6 +113,11 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
         self.begin_scope()
         self.resolve(stmt.stmts)
         self.end_scope()
+
+    @visit.register
+    def _(self, stmt: ClassStmt) -> None:
+        self.declare(stmt.name)
+        self.define(stmt.name)
 
     @visit.register
     def _(self, stmt: VarStmt) -> None:

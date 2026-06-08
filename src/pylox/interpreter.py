@@ -17,14 +17,17 @@ from pylox.expression import (
     CallExpr,
     Expr,
     ExprVisitor,
+    GetExpr,
     GroupingExpr,
     LiteralExpr,
+    SetExpr,
     UnaryExpr,
     VarExpr,
 )
 from pylox.function import LoxCallable, LoxFunction
 from pylox.knobs import get_knob
 from pylox.loxclass import LoxClass
+from pylox.loxinstance import LoxInstance
 from pylox.statement import (
     BlockStmt,
     ClassStmt,
@@ -312,6 +315,25 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
                 PyloxImpossibleCaseError(f"Unexpected token type: {t}")
 
         PyloxImpossibleCaseError()
+
+    @visit.register
+    def _(self, expr: GetExpr) -> object:
+        obj = self.evaluate(expr.object)
+        if not isinstance(obj, LoxInstance):
+            raise LoxRuntimeError("Only instances have properties.", expr.name)
+        value = obj.get(expr.name)
+        return value
+
+    @visit.register
+    def _(self, expr: SetExpr) -> object:
+        obj = self.evaluate(expr.object)
+        if not isinstance(obj, LoxInstance):
+            raise LoxRuntimeError("Only instances have fields.", expr.name)
+
+        value = self.evaluate(expr.value)
+        obj.set(expr.name, value)
+
+        return value
 
     @visit.register
     def _(self, expr: CallExpr) -> object:

@@ -12,8 +12,10 @@ from pylox.expression import (
     CallExpr,
     Expr,
     ExprVisitor,
+    GetExpr,
     GroupingExpr,
     LiteralExpr,
+    SetExpr,
     UnaryExpr,
     VarExpr,
 )
@@ -189,6 +191,15 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
         self.resolve_expr(expr.callee)
         for argument in expr.arguments:
             self.resolve_expr(argument)
+
+    @visit.register
+    def _(self, expr: GetExpr) -> None:
+        self.resolve_expr(expr.object)
+
+    @visit.register
+    def _(self, expr: SetExpr) -> None:
+        self.resolve_expr(expr.value)
+        self.resolve_expr(expr.object)
 
     @visit.register
     def _(self, expr: LiteralExpr) -> None:

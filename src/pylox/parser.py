@@ -7,8 +7,10 @@ from pylox.expression import (
     BinaryLogicalExpr,
     CallExpr,
     Expr,
+    GetExpr,
     GroupingExpr,
     LiteralExpr,
+    SetExpr,
     UnaryExpr,
     VarExpr,
 )
@@ -211,6 +213,8 @@ class Parser:
 
             if isinstance(expr, VarExpr):
                 return AssignExpr(expr.name, value)
+            elif isinstance(expr, GetExpr):
+                return SetExpr(expr.object, expr.name, value)
 
             else:
                 self.error(equals, "Invalid assignment target.")
@@ -278,6 +282,9 @@ class Parser:
         while True:
             if self.match(TokenType.LEFT_PAREN):
                 expr = self.finish_parsing_call(expr)
+            elif self.match(TokenType.DOT):
+                name = self.consume(TokenType.IDENTIFIER, "Expect property name after '.'.")
+                expr = GetExpr(expr, name)
             else:
                 break
 

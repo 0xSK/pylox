@@ -64,6 +64,19 @@ class CallExpr(Expr):
     arguments: list[Expr]
 
 
+@ast_node
+class GetExpr(Expr):
+    object: Expr
+    name: Token
+
+
+@ast_node
+class SetExpr(Expr):
+    object: Expr
+    name: Token
+    value: Expr
+
+
 @runtime_checkable
 class ExprVisitor[T](Protocol):
     def visit(self, expr: Expr) -> T: ...

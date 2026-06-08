@@ -39,6 +39,7 @@ from pylox.token import Token
 class FunctionType(Enum):
     NONE = auto()
     FUNCTION = auto()
+    METHOD = auto()
 
 
 class Scope(dict[str, bool]):
@@ -120,6 +121,10 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
     def _(self, stmt: ClassStmt) -> None:
         self.declare(stmt.name)
         self.define(stmt.name)
+
+        for method in stmt.methods:
+            declaration = FunctionType.METHOD
+            self.resolve_function(method, declaration)
 
     @visit.register
     def _(self, stmt: VarStmt) -> None:

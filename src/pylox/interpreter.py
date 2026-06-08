@@ -165,7 +165,12 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
     @visit.register
     def _(self, stmt: ClassStmt) -> None:
         self.environment.define(stmt.name.lexeme, None)
-        klass = LoxClass(stmt.name.lexeme)
+        methodsDict: dict[str, LoxFunction] = {}
+        for method in stmt.methods:
+            function = LoxFunction(method, self.environment)
+            methodsDict[method.name.lexeme] = function
+
+        klass = LoxClass(stmt.name.lexeme, methodsDict)
         self.environment.assign(stmt.name, klass)
 
     @visit.register

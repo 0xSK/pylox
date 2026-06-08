@@ -16,9 +16,14 @@ class LoxInstance:
     fields: dict[str, object] = field(default_factory=dict)
 
     def get(self, name: Token):
-        if name.lexeme not in self.fields:
-            raise LoxRuntimeError(f"Undefined proprety {name.lexeme}.", name)
-        return self.fields[name.lexeme]
+        if name.lexeme in self.fields:
+            return self.fields[name.lexeme]
+
+        method = self.klass.find_method(name.lexeme)
+        if method is not None:
+            return method
+
+        raise LoxRuntimeError(f"Undefined proprety {name.lexeme}.", name)
 
     def set(self, name: Token, value: object):
         self.fields[name.lexeme] = value

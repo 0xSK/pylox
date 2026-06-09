@@ -168,7 +168,8 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
         self.environment.define(stmt.name.lexeme, None)
         methodsDict: dict[str, LoxFunction] = {}
         for method in stmt.methods:
-            function = LoxFunction(method, self.environment)
+            isInitializer = method.name.lexeme == "init"
+            function = LoxFunction(method, self.environment, isInitializer)
             methodsDict[method.name.lexeme] = function
 
         klass = LoxClass(stmt.name.lexeme, methodsDict)
@@ -183,7 +184,7 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
 
     @visit.register
     def _(self, stmt: FunctionStmt) -> None:
-        function = LoxFunction(stmt, self.environment)
+        function = LoxFunction(stmt, self.environment, False)
         self.environment.define(stmt.name.lexeme, function)
 
     @visit.register

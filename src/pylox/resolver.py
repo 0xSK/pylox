@@ -41,6 +41,7 @@ class FunctionType(Enum):
     NONE = auto()
     FUNCTION = auto()
     METHOD = auto()
+    INITIALIZER = auto()
 
 
 class ClassType(Enum):
@@ -136,7 +137,11 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
         self.peek_scope["this"] = True
 
         for method in stmt.methods:
-            declaration = FunctionType.METHOD
+            if method.name.lexeme == "init":
+                declaration = FunctionType.INITIALIZER
+            else:
+                declaration = FunctionType.METHOD
+
             self.resolve_function(method, declaration)
 
         self.end_scope()
@@ -169,6 +174,8 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
         if self.currentFunctionType is FunctionType.NONE:
             self.error_callback(stmt.keyword, "Can't return from top-level code.")
         if stmt.value is not None:
+            if self.currentFunctionType == FunctionType.INITIALIZER:
+                self.error_callback(stmt.keyword, "Can't return a value from an initializer.")
             self.resolve_expr(stmt.value)
 
     @visit.register

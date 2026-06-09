@@ -23,6 +23,7 @@ class LoxCallable(Protocol):
 class LoxFunction(LoxCallable):
     declaration: FunctionStmt
     closure: Environment
+    isInitializer: bool
 
     @property
     def arity(self) -> int:
@@ -36,14 +37,19 @@ class LoxFunction(LoxCallable):
         try:
             interpreter.executeBlock(self.declaration.body, Environment(environment))
         except LoxReturn as ret:
+            if self.isInitializer:
+                return self.closure.get_at(0, "this")
             return ret.value
+
+        if self.isInitializer:
+            return self.closure.get_at(0, "this")
 
         return None
 
     def bind(self, instance: LoxInstance) -> LoxFunction:
         environment = Environment(self.closure)
         environment.define("this", instance)
-        return LoxFunction(self.declaration, environment)
+        return LoxFunction(self.declaration, environment, self.isInitializer)
 
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"

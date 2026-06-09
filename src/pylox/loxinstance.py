@@ -21,7 +21,7 @@ class LoxInstance:
 
         method = self.klass.find_method(name.lexeme)
         if method is not None:
-            return method
+            return method.bind(self)
 
         raise LoxRuntimeError(f"Undefined proprety {name.lexeme}.", name)
 

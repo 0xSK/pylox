@@ -16,6 +16,7 @@ from pylox.expression import (
     GroupingExpr,
     LiteralExpr,
     SetExpr,
+    ThisExpr,
     UnaryExpr,
     VarExpr,
 )
@@ -42,6 +43,11 @@ class FunctionType(Enum):
     METHOD = auto()
 
 
+class ClassType(Enum):
+    NONE = auto()
+    CLASS = auto()
+
+
 class Scope(dict[str, bool]):
     pass
 
@@ -52,6 +58,7 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
         self.error_callback = error_callback
         self.scopes: deque[Scope] = deque()
         self.currentFunctionType = FunctionType.NONE
+        self.currentClassType = ClassType.NONE
 
     def resolve(self, stmts: list[Stmt]) -> None:
         for stmt in stmts:
@@ -119,12 +126,22 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
 
     @visit.register
     def _(self, stmt: ClassStmt) -> None:
+        enclosingClassType = self.currentClassType
+        self.currentClassType = ClassType.CLASS
+
         self.declare(stmt.name)
         self.define(stmt.name)
+
+        self.begin_scope()
+        self.peek_scope["this"] = True
 
         for method in stmt.methods:
             declaration = FunctionType.METHOD
             self.resolve_function(method, declaration)
+
+        self.end_scope()
+
+        self.currentClassType = enclosingClassType
 
     @visit.register
     def _(self, stmt: VarStmt) -> None:
@@ -205,6 +222,14 @@ class Resolver(ExprVisitor[None], StmtVisitor[None]):
     def _(self, expr: SetExpr) -> None:
         self.resolve_expr(expr.value)
         self.resolve_expr(expr.object)
+
+    @visit.register
+    def _(self, expr: ThisExpr) -> None:
+        if self.currentClassType is ClassType.NONE:
+            self.error_callback(expr.keyword, "Can't use 'this' outside of a class.")
+            return
+
+        self.resolve_local(expr, expr.keyword)
 
     @visit.register
     def _(self, expr: LiteralExpr) -> None:

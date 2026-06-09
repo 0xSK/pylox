@@ -9,6 +9,7 @@ from pylox.statement import FunctionStmt
 
 if TYPE_CHECKING:
     from pylox.interpreter import Interpreter
+    from pylox.loxinstance import LoxInstance
 
 
 @runtime_checkable
@@ -38,6 +39,11 @@ class LoxFunction(LoxCallable):
             return ret.value
 
         return None
+
+    def bind(self, instance: LoxInstance) -> LoxFunction:
+        environment = Environment(self.closure)
+        environment.define("this", instance)
+        return LoxFunction(self.declaration, environment)
 
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"

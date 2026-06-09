@@ -11,6 +11,7 @@ from pylox.expression import (
     GroupingExpr,
     LiteralExpr,
     SetExpr,
+    ThisExpr,
     UnaryExpr,
     VarExpr,
 )
@@ -311,6 +312,8 @@ class Parser:
             expr = LiteralExpr(True)
         elif self.match(TokenType.NIL):
             expr = LiteralExpr(None)
+        elif self.match(TokenType.THIS):
+            expr = ThisExpr(self.previous())
         elif self.match(TokenType.IDENTIFIER):
             expr = VarExpr(self.previous())
         elif self.match(TokenType.NUMBER, TokenType.STRING):

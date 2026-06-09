@@ -21,6 +21,7 @@ from pylox.expression import (
     GroupingExpr,
     LiteralExpr,
     SetExpr,
+    ThisExpr,
     UnaryExpr,
     VarExpr,
 )
@@ -355,6 +356,10 @@ class Interpreter(ExprVisitor[object], StmtVisitor[None]):
             )
 
         return callee.call(self, arguments)
+
+    @visit.register
+    def _(self, expr: ThisExpr) -> object:
+        return self.lookup_variable(expr.keyword, expr)
 
     def is_truthy(self, value: object) -> bool:
         if value is False or value is None:

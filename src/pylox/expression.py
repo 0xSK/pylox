@@ -77,6 +77,11 @@ class SetExpr(Expr):
     value: Expr
 
 
+@ast_node
+class ThisExpr(Expr):
+    keyword: Token
+
+
 @runtime_checkable
 class ExprVisitor[T](Protocol):
     def visit(self, expr: Expr) -> T: ...
